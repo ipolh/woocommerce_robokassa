@@ -1,10 +1,37 @@
 <div class="content_holder">
-    <?php
+<?php
     if (isset($_REQUEST['settings-updated'])) {
         include 'labelsGenerator.php';
         echo "<script>console.log('Labels Updated!')</script>";
     }
-    ?>
+    /** @var array $formProperties */
+    $formProperties = [
+	    'wc_robokassa_enabled',
+	    'MerchantLogin',
+	    'shoppass1',
+	    'shoppass2',
+	    'test_onoff',
+	    'testshoppass1',
+	    'testshoppass2',
+	    'type_commission',
+	    'sno',
+	    'tax',
+	    'who_commission',
+	    'size_commission',
+	    'paytype',
+	    'SuccessURL',
+	    'FailURL',
+    ];
+
+    require_once __DIR__ . '/labelsClasses.php';
+
+	foreach(add_WC_WP_robokassa_class() as $class):
+		$method = new $class;
+		$formProperties[] = 'RobokassaOrderPageTitle_'.$method->id;
+		$formProperties[] = 'RobokassaOrderPageDescription_'.$method->id;
+	endforeach;
+?>
+<pre><?php print_r($formProperties);?></pre>
     <div align="left"><p class="big_title_rb">Помощь и инструкция по установке</p></div>
     <p>Введите данные API в разделе "Основные настройки".</p>
     <p>В личном кабинете на сайте Робокассы введите следующие URL адреса:</p>
@@ -67,18 +94,42 @@
                 </td>
             </tr>
 
-            <tr valign="top">
-                <th scope="row">Заголовок на странице оформления заказа</th>
-                <td>
-	                <input type="text" name="RobokassaOrderPageTitle" value="<?php echo get_option('RobokassaOrderPageTitle'); ?>"/>
-                </td>
-            </tr>
-            <tr valign="top">
-                <th scope="row">Описание на странице оформления заказа</th>
-                <td>
-	                <input type="text" name="RobokassaOrderPageDescription" value="<?php echo get_option('RobokassaOrderPageDescription'); ?>"/>
-                </td>
-            </tr>
+	        <?php if((int) \count(add_WC_WP_robokassa_class()) === 1):?>
+		        <tr valign="top">
+			        <th scope="row">Заголовок на странице оформления заказа</th>
+			        <td>
+				        <input type="text" name="RobokassaOrderPageTitle_all" value="<?php echo get_option('RobokassaOrderPageTitle_all'); ?>"/>
+			        </td>
+		        </tr>
+		        <tr valign="top">
+			        <th scope="row">Описание на странице оформления заказа</th>
+			        <td>
+				        <input type="text" name="RobokassaOrderPageDescription_all" value="<?php echo get_option('RobokassaOrderPageDescription_all'); ?>"/>
+			        </td>
+		        </tr>
+
+	        <?php else:?>
+		        <?php foreach(add_WC_WP_robokassa_class() as $class): $method = new $class;?>
+
+		            <tr>
+			            <th colspan="2">
+				            <?=$method->title;?>
+			            </th>
+		            </tr>
+		            <tr valign="top">
+		                <td scope="row">Заголовок на странице оформления заказа</td>
+		                <td>
+			                <input type="text" name="RobokassaOrderPageTitle_<?=$method->id;?>" value="<?php echo get_option('RobokassaOrderPageTitle_'.$method->id); ?>"/>
+		                </td>
+		            </tr>
+		            <tr valign="top">
+		                <td scope="row">Описание на странице оформления заказа</td>
+		                <td>
+			                <input type="text" name="RobokassaOrderPageDescription_<?=$method->id;?>" value="<?php echo get_option('RobokassaOrderPageDescription_'.$method->id); ?>"/>
+		                </td>
+		            </tr>
+		        <?php endforeach;?>
+	        <?php endif;?>
 
             <tr valign="top">
                 <th scope="row">Логин магазина</th>
@@ -329,8 +380,7 @@
         </div>
 
         <input type="hidden" name="action" value="update"/>
-        <input type="hidden" name="page_options"
-               value="RobokassaOrderPageTitle,RobokassaOrderPageDescription,wc_robokassa_enabled,MerchantLogin,shoppass1,shoppass2,test_onoff,testshoppass1,testshoppass2,type_commission,sno,tax,who_commission,size_commission,paytype,SuccessURL,FailURL"/>
+        <input type="hidden" name="page_options" value="<?=\implode(',', $formProperties);?>"/>
 
         <p class="submit">
             <input type="submit" class="button-primary" value="<?php _e('Save Changes') ?>"/>

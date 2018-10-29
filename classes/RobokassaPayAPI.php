@@ -312,6 +312,7 @@ class RobokassaPayAPI {
 							$outArr[$valLabel] = array(
 								'Name' => $attr['Name'],
 								'Label' => $valLabel,
+								'Alias' => $attr['Alias'],
 								'Commission' => $this->GetCommission($valLabel),
 								'MinValue' => isset($attr['MinValue']) ? $attr['MinValue'] : 0,
 								'MaxValue' => isset($attr['MaxValue']) ? $attr['MaxValue'] : 9999999,

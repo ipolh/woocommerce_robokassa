@@ -15,11 +15,21 @@ class WC_WP_robokassa extends WC_Payment_Gateway {
      */
     public $commission;
 
+	/**
+	 * WC_WP_robokassa constructor.
+	 */
     public function __construct() {
 
 
-	    $this->title = get_option('RobokassaOrderPageTitle', 'Робокасса');
-	    $this->description = get_option('RobokassaOrderPageDescription');
+	    $this->title = \mb_strlen(get_option('RobokassaOrderPageTitle_' . $this->id, null)) > 0
+		    ? get_option('RobokassaOrderPageTitle_' . $this->id, null)
+		    : $this->title
+	    ;
+
+	    $this->description = \mb_strlen(get_option('RobokassaOrderPageDescription_' . $this->id, null)) > 0
+		    ? get_option('RobokassaOrderPageDescription_' . $this->id, null)
+		    : $this->title
+	    ;
 
         $this->init_form_fields();
         $this->init_settings();

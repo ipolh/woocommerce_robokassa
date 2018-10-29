@@ -23,7 +23,6 @@ $method = "class payment_all extends WC_WP_robokassa {\n"
         . "        \$this->id = 'all';\n"
         . "        \$this->method_title = 'Робокасса';\n"
         . "        \$this->long_name = 'Оплата через Робокасса';\n"
-        . "        \$this->title = get_option('RobokassaOrderPageTitle', 'Робокасса');\n"
         . "        \$this->description = get_option('RobokassaOrderPageDescription', 'Оплатить через Робокасса');\n"
         . "        \$this->commission = 0;\n\n"
         . "        parent::__construct();\n"
@@ -35,14 +34,15 @@ $array = array();
 
 foreach ($currLabels as $key => $value) {
     $label = $value['Label'];
+    $alias = $value['Alias'];
     $name = $value['Name'];
 
     $method = "class payment_$label extends WC_WP_robokassa {\n"
             . "    public function __construct() {\n"
-            . "        \$this->id = '$label';\n"
+            . "        \$this->id = '$alias';\n"
             . "        \$this->method_title = '$name (Робокасса)';\n"
             . "        \$this->long_name='Оплата через $name (Робокасса)';\n"
-            . "        \$this->title = get_option('RobokassaOrderPageTitle');\n"
+            . "        \$this->title = '$name';\n"
             . "        \$this->description = 'Оплатить через $name (Робокасса). Комиссия: {$value['Commission']}';\n"
             . "        \$this->commission = {$value['Commission']};\n\n"
             . "        parent::__construct();\n"
