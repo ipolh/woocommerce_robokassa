@@ -31,7 +31,7 @@
 		$formProperties[] = 'RobokassaOrderPageDescription_'.$method->id;
 	endforeach;
 ?>
-<pre><?php print_r($formProperties);?></pre>
+
     <div align="left"><p class="big_title_rb">Помощь и инструкция по установке</p></div>
     <p>Введите данные API в разделе "Основные настройки".</p>
     <p>В личном кабинете на сайте Робокассы введите следующие URL адреса:</p>
