@@ -1,5 +1,7 @@
 <?php
 
+namespace Robokassa\Payment;
+
 class RobokassaSms {
 
     /**
@@ -35,8 +37,8 @@ class RobokassaSms {
     /**
      * RobokassaSms constructor.
      *
-     * @param \RoboDataBase    $dataBase
-     * @param \RobokassaPayAPI $roboKassa
+     * @param RoboDataBase    $dataBase
+     * @param RobokassaPayAPI $roboKassa
      * @param                  $phone
      * @param                  $message
      * @param                  $translit
@@ -78,15 +80,16 @@ class RobokassaSms {
         }
     }
 
-    /**
-     * Проверяем существует ли уже в таблице смс со статусом -1 (не отправлено)
-     *
-     * @return bool
-     */
+	/**
+	 * Проверяем существует ли уже в таблице смс со статусом -1 (не отправлено)
+	 *
+	 * @return bool
+	 * @throws \Exception
+	 */
     private function checkIsSended() {
-        $dbPrefix = getDbPrefix();
+        $dbPrefix = \robokassa_payment_getDbPrefix();
 
-        if (mysqli_num_rows($this->dataBase->query("SELECT * FROM `{$dbPrefix}sms_stats` WHERE order_id='$this->order_id' AND type=".$this->type)) >= 1) {
+        if (\mysqli_num_rows($this->dataBase->query("SELECT * FROM `{$dbPrefix}sms_stats` WHERE order_id='$this->order_id' AND type=".$this->type)) >= 1) {
             $this->dataBase->query("UPDATE `{$dbPrefix}sms_stats` SET send_time= NOW(), status='-1' WHERE order_id='$this->order_id'");
 
             return false;
@@ -270,9 +273,10 @@ class RobokassaSms {
             ), $this->message);
     }
 
-    /**
-     * @return void
-     */
+	/**
+	 * @return void
+	 * @throws \Exception
+	 */
     public function send() {
         $this->message = $this->filterSms();
         $this->message = $this->transliterate();

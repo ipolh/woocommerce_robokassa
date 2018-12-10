@@ -1,37 +1,61 @@
+<?php
+
+	if(!\current_user_can('activate_plugins'))
+	{
+
+		echo '<br /><br />
+				<div class="error notice">
+	                <p>У Вас не хватает прав на настройку компонента</p>
+				</div>
+			';
+		return;
+	}
+
+	\wp_enqueue_script(
+		'robokassa_payment_admin_main_payment',
+		\plugin_dir_url(__FILE__) . 'assets/js/admin-payment.js'
+	);
+?>
+
 <div class="content_holder">
 <?php
-    if (isset($_REQUEST['settings-updated'])) {
+
+	if (isset($_REQUEST['settings-updated']))
+	{
         include 'labelsGenerator.php';
-        echo "<script>console.log('Labels Updated!')</script>";
     }
+
     /** @var array $formProperties */
     $formProperties = [
-	    'wc_robokassa_enabled',
-	    'MerchantLogin',
-	    'shoppass1',
-	    'shoppass2',
-	    'test_onoff',
-	    'testshoppass1',
-	    'testshoppass2',
-	    'type_commission',
-	    'sno',
-	    'tax',
-	    'who_commission',
-	    'size_commission',
-	    'paytype',
-	    'SuccessURL',
-	    'FailURL',
+	    'robokassa_payment_wc_robokassa_enabled',
+	    'robokassa_payment_MerchantLogin',
+	    'robokassa_payment_shoppass1',
+	    'robokassa_payment_shoppass2',
+	    'robokassa_payment_test_onoff',
+	    'robokassa_payment_testshoppass1',
+	    'robokassa_payment_testshoppass2',
+	    'robokassa_payment_type_commission',
+	    'robokassa_payment_sno',
+	    'robokassa_payment_tax',
+	    'robokassa_payment_who_commission',
+	    'robokassa_payment_size_commission',
+	    'robokassa_payment_paytype',
+	    'robokassa_payment_SuccessURL',
+	    'robokassa_payment_FailURL',
+	    'robokassa_payment_paymentMethod',
+	    'robokassa_payment_paymentObject',
     ];
 
     require_once __DIR__ . '/labelsClasses.php';
 
-	foreach(add_WC_WP_robokassa_class() as $class):
+	foreach(robokassa_payment_add_WC_WP_robokassa_class() as $class):
 		$method = new $class;
 		$formProperties[] = 'RobokassaOrderPageTitle_'.$method->id;
 		$formProperties[] = 'RobokassaOrderPageDescription_'.$method->id;
 	endforeach;
 ?>
 
+<div class="main-settings">
     <div align="left"><p class="big_title_rb">Помощь и инструкция по установке</p></div>
     <p>Введите данные API в разделе "Основные настройки".</p>
     <p>В личном кабинете на сайте Робокассы введите следующие URL адреса:</p>
@@ -40,8 +64,8 @@
             <td>ResultURL:</td>
             <td><code id="ResultURL"><?php echo site_url('/?robokassa=result'); ?></code></td>
             <td>
-                <button class="btn btn-default btn-clipboard" data-clipboard-target="#ResultURL"
-                        onclick="event.preventDefault();" style="padding: 4px;">Скопировать
+                <button class="btn btn-default btn-clipboard btn-main" data-clipboard-target="#ResultURL" onclick="event.preventDefault();">
+	                Скопировать
                 </button>
             </td>
         </tr>
@@ -49,8 +73,8 @@
             <td>SuccessURL:</td>
             <td><code id="SuccessURL"><?php echo site_url('/?robokassa=success'); ?></td>
             <td>
-                <button class="btn btn-default btn-clipboard" data-clipboard-target="#SuccessURL"
-                        onclick="event.preventDefault();" style="padding: 4px;">Скопировать
+                <button class="btn btn-default btn-clipboard btn-main" data-clipboard-target="#SuccessURL" onclick="event.preventDefault();">
+	                Скопировать
                 </button>
             </td>
         </tr>
@@ -58,8 +82,8 @@
             <td>FailURL:</td>
             <td><code id="FailURL"><?php echo site_url('/?robokassa=fail'); ?></code></td>
             <td>
-                <button class="btn btn-default btn-clipboard" data-clipboard-target="#FailURL"
-                        onclick="event.preventDefault();" style="padding: 4px;">Скопировать
+                <button class="btn btn-default btn-clipboard btn-main" data-clipboard-target="#FailURL" onclick="event.preventDefault();">
+	                Скопировать
                 </button>
             </td>
         </tr>
@@ -79,12 +103,12 @@
             <tr valign="top">
                 <th scope="row">Включить оплату через Робокассу</th>
                 <td>
-                    <input type="radio" id="enabled_on" name="wc_robokassa_enabled" value="yes"
-                        <?php echo get_option('wc_robokassa_enabled') == 'yes' ? 'checked="checked"' : ''; ?>>
+                    <input type="radio" id="enabled_on" name="robokassa_payment_wc_robokassa_enabled" value="yes"
+                        <?php echo get_option('robokassa_payment_wc_robokassa_enabled') == 'yes' ? 'checked="checked"' : ''; ?>>
                     <label for="enabled_on">Стандартная схема</label>
 
-                    <input type="radio" id="enabled_off" name="wc_robokassa_enabled" value="no"
-                        <?php echo get_option('wc_robokassa_enabled') == 'no' ? 'checked="checked"' : ''; ?>>
+                    <input type="radio" id="enabled_off" name="robokassa_payment_wc_robokassa_enabled" value="no"
+                        <?php echo get_option('robokassa_payment_wc_robokassa_enabled') == 'no' ? 'checked="checked"' : ''; ?>>
                     <label for="enabled_off">Отключена</label>
 
                     <?php /*
@@ -94,7 +118,7 @@
                 </td>
             </tr>
 
-	        <?php if((int) \count(add_WC_WP_robokassa_class()) === 1):?>
+	        <?php if((int) \count(robokassa_payment_add_WC_WP_robokassa_class()) === 1):?>
 		        <tr valign="top">
 			        <th scope="row">Заголовок на странице оформления заказа</th>
 			        <td>
@@ -109,7 +133,7 @@
 		        </tr>
 
 	        <?php else:?>
-		        <?php foreach(add_WC_WP_robokassa_class() as $class): $method = new $class;?>
+		        <?php foreach(robokassa_payment_add_WC_WP_robokassa_class() as $class): $method = new $class;?>
 
 		            <tr>
 			            <th colspan="2">
@@ -133,17 +157,17 @@
 
             <tr valign="top">
                 <th scope="row">Логин магазина</th>
-                <td><input type="text" name="MerchantLogin" value="<?php echo get_option('MerchantLogin'); ?>"/></td>
+                <td><input type="text" name="robokassa_payment_MerchantLogin" value="<?php echo get_option('robokassa_payment_MerchantLogin'); ?>"/></td>
             </tr>
 
             <tr valign="top">
                 <th scope="row">Пароль магазина #1</th>
-                <td><input type="password" name="shoppass1" value="<?php echo get_option('shoppass1'); ?>"/></td>
+                <td><input type="password" name="robokassa_payment_shoppass1" value="<?php echo get_option('robokassa_payment_shoppass1'); ?>"/></td>
             </tr>
 
             <tr valign="top">
                 <th scope="row">Пароль магазина #2</th>
-                <td><input type="password" name="shoppass2" value="<?php echo get_option('shoppass2'); ?>"/></td>
+                <td><input type="password" name="robokassa_payment_shoppass2" value="<?php echo get_option('robokassa_payment_shoppass2'); ?>"/></td>
             </tr>
         </table>
 
@@ -151,88 +175,49 @@
 
         <a class="spoiler_links button">Показать/скрыть</a>
 
-        <div class="spoiler_body" style="display: none;">
+        <div class="spoiler_body">
             <table class="form-table">
                 <tr valign="top">
                     <th scope="row">Включить тестовый режим</th>
                     <td>
-                        <input type="radio" id="test_on" name="test_onoff" value="true"
-                            <?php echo get_option('test_onoff') == 'true' ? 'checked="checked"' : ''; ?>>
+                        <input type="radio" id="test_on" name="robokassa_payment_test_onoff" value="true"
+                            <?php echo get_option('robokassa_payment_test_onoff') == 'true' ? 'checked="checked"' : ''; ?>>
                         <label for="test_on">Включен</label>
 
-                        <input type="radio" id="test_off" name="test_onoff" value="false"
-                            <?php echo get_option('test_onoff') == 'false' ? 'checked="checked"' : ''; ?>>
+                        <input type="radio" id="test_off" name="robokassa_payment_test_onoff" value="false"
+                            <?php echo get_option('robokassa_payment_test_onoff') == 'false' ? 'checked="checked"' : ''; ?>>
                         <label for="test_off">Выключен</label>
                     </td>
                 </tr>
 
                 <tr valign="top">
                     <th scope="row">Пароль магазина для тестов #1</th>
-                    <td><input type="password" name="testshoppass1" value="<?php echo get_option('testshoppass1'); ?>"/>
+                    <td><input type="password" name="robokassa_payment_testshoppass1" value="<?php echo get_option('robokassa_payment_testshoppass1'); ?>"/>
                     </td>
                 </tr>
 
                 <tr valign="top">
                     <th scope="row">Пароль магазина для тестов #2</th>
-                    <td><input type="password" name="testshoppass2" value="<?php echo get_option('testshoppass2'); ?>"/>
+                    <td><input type="password" name="robokassa_payment_testshoppass2" value="<?php echo get_option('robokassa_payment_testshoppass2'); ?>"/>
                     </td>
                 </tr>
             </table>
         </div>
 
-        <script type="text/javascript"
-                src="https://cdnjs.cloudflare.com/ajax/libs/jquery.maskedinput/1.4.1/jquery.maskedinput.min.js"></script>
-        <script>
-            $(document).ready(function () {
-                spoleer();
-
-                $("#size_commission1").mask("99");
-            });
-
-            function spoleer() {
-                var e1 = document.getElementById("type_fiz");
-                var e2 = document.getElementById("who_both");
-
-                if (e1.checked) {
-                    document.getElementById("commission").style.display = 'table-row';
-                    document.getElementById("sno").style.display = 'none';
-                    document.getElementById("tax").style.display = 'none';
-
-                    if (e2.checked) {
-                        document.getElementById("size_commission").style.display = 'table-row';
-                    } else {
-                        document.getElementById("size_commission").style.display = 'none';
-                    }
-                } else {
-                    document.getElementById("commission").style.display = 'none';
-                    document.getElementById("sno").style.display = 'table-row';
-
-                    var sno = document.getElementById("sno_select");
-
-                    if (sno.options[sno.selectedIndex].value === 'osn') {
-                        document.getElementById("tax").style.display = 'table-row';
-                    } else {
-                        document.getElementById("tax").style.display = 'none';
-                    }
-                    document.getElementById("size_commission").style.display = 'none';
-                }
-            }
-        </script>
-
         <p class="mid_title_rb">Общие настройки</p>
 
         <a class="spoiler_links button">Показать/скрыть</a>
 
-        <div class="spoiler_body" style="display: none;">
+        <div class="spoiler_body">
             <table class="form-table">
                 <tr valign="top">
                     <th scope="row">Статус продавца</th>
                     <td>
-                        <input type="radio" id="type_fiz" name="type_commission"
-                               value="true" <?php echo get_option('type_commission') == 'true' ? 'checked="checked"'
+                        <input type="radio" id="type_fiz" name="robokassa_payment_type_commission"
+                               value="true" <?php echo get_option('robokassa_payment_type_commission') == 'true' ? 'checked="checked"'
                             : ''; ?> onchange="spoleer();"><label for="type_fiz">Физ. лицо</label>
-                        <input type="radio" id="type_ur" name="type_commission"
-                               value="false" <?php echo get_option('type_commission') == 'false' ? 'checked="checked"'
+                        <input type="radio" id="type_ur" name="robokassa_payment_type_commission"
+                               value="false" <?php echo get_option('robokassa_payment_type_commission') == 'false' ? 'checked="checked"'
                             : ''; ?> onchange="spoleer();"><label for="type_ur">Юр. лицо</label>
                     </td>
                 </tr>
@@ -240,28 +225,51 @@
                 <tr valign="top" id="sno">
                     <th scope="row">Система налогообложения</th>
                     <td>
-                        <select id="sno_select" name="sno" onchange="spoleer();">
-                            <option value="fckoff" <?php echo((get_option('sno') == 'fckoff') ? ' selected' : ''); ?>>Не
+                        <select id="sno_select" name="robokassa_payment_sno" onchange="spoleer();">
+                            <option value="fckoff" <?php echo((get_option('robokassa_payment_sno') == 'fckoff') ? ' selected' : ''); ?>>Не
                                 передавать
                             </option>
-                            <option value="osn" <?php echo((get_option('sno') == 'osn') ? ' selected' : ''); ?>>Общая
+                            <option value="osn" <?php echo((get_option('robokassa_payment_sno') == 'osn') ? ' selected' : ''); ?>>Общая
                                 СН
                             </option>
-                            <option value="usn_income" <?php echo((get_option('sno') == 'usn_income') ? ' selected'
+                            <option value="usn_income" <?php echo((get_option('robokassa_payment_sno') == 'usn_income') ? ' selected'
                                 : ''); ?>>Упрощенная СН (доходы)
                             </option>
-                            <option value="usn_income_outcome" <?php echo((get_option('sno') == 'usn_income_outcome')
+                            <option value="usn_income_outcome" <?php echo((get_option('robokassa_payment_sno') == 'usn_income_outcome')
                                 ? ' selected' : ''); ?>>Упрощенная СН (доходы минус расходы)
                             </option>
-                            <option value="envd" <?php echo((get_option('sno') == 'envd') ? ' selected' : ''); ?>>Единый
+                            <option value="envd" <?php echo((get_option('robokassa_payment_sno') == 'envd') ? ' selected' : ''); ?>>Единый
                                 налог на вмененный доход
                             </option>
-                            <option value="esn" <?php echo((get_option('sno') == 'esn') ? ' selected' : ''); ?>>Единый
+                            <option value="esn" <?php echo((get_option('robokassa_payment_sno') == 'esn') ? ' selected' : ''); ?>>Единый
                                 сельскохозяйственный налог
                             </option>
-                            <option value="patent" <?php echo((get_option('sno') == 'patent') ? ' selected' : ''); ?>>
+                            <option value="patent" <?php echo((get_option('robokassa_payment_sno') == 'patent') ? ' selected' : ''); ?>>
                                 Патентная СН
                             </option>
+                        </select>
+                    </td>
+                </tr>
+
+                <tr valign="top" id="payment_method">
+                    <th scope="row">Признак способа расчёта</th>
+                    <td>
+                        <select id="payment_method_select" name="robokassa_payment_paymentMethod" onchange="spoleer();">
+	                        <option value="">Не выбрано</option>
+	                        <?php foreach(\Robokassa\Payment\Helper::$paymentMethods as $paymentMethod):?>
+		                        <option <?php if(\get_option('robokassa_payment_paymentMethod') === $paymentMethod['code']):?> selected="selected"<?php endif;?> value="<?=$paymentMethod['code'];?>"><?=$paymentMethod['title'];?></option>
+	                        <?php endforeach;?>
+                        </select>
+                    </td>
+                </tr>
+                <tr valign="top" id="payment_object">
+                    <th scope="row">Признак предмета расчёта</th>
+                    <td>
+                        <select id="payment_object_select" name="robokassa_payment_paymentObject" onchange="spoleer();">
+	                        <option value="">Не выбрано</option>
+	                        <?php foreach(\Robokassa\Payment\Helper::$paymentObjects as $paymentObject):?>
+		                        <option <?php if(\get_option('robokassa_payment_paymentObject') === $paymentObject['code']):?> selected="selected"<?php endif;?>value="<?=$paymentObject['code'];?>"><?=$paymentObject['title'];?></option>
+	                        <?php endforeach;?>
                         </select>
                     </td>
                 </tr>
@@ -269,26 +277,26 @@
                 <tr valign="top" id="tax">
                     <th scope="row">Система налогообложения</th>
                     <td>
-                        <select id="tax_select" name="tax" onchange="spoleer();">
-                            <option value="none" <?php echo((get_option('tax') == 'none') ? ' selected' : ''); ?>>Не
+                        <select id="tax_select" name="robokassa_payment_tax" onchange="spoleer();">
+                            <option value="none" <?php echo((get_option('robokassa_payment_tax') == 'none') ? ' selected' : ''); ?>>Не
                                 передавать
                             </option>
-                            <option value="none" <?php echo((get_option('tax') == 'none') ? ' selected' : ''); ?>>Без
+                            <option value="none" <?php echo((get_option('robokassa_payment_tax') == 'none') ? ' selected' : ''); ?>>Без
                                 НДС
                             </option>
-                            <option value="vat0" <?php echo((get_option('tax') == 'vat0') ? ' selected' : ''); ?>>НДС по
+                            <option value="vat0" <?php echo((get_option('robokassa_payment_tax') == 'vat0') ? ' selected' : ''); ?>>НДС по
                                 ставке 0%
                             </option>
-                            <option value="vat10" <?php echo((get_option('tax') == 'vat10') ? ' selected' : ''); ?>>НДС
+                            <option value="vat10" <?php echo((get_option('robokassa_payment_tax') == 'vat10') ? ' selected' : ''); ?>>НДС
                                 чека по ставке 10%
                             </option>
-                            <option value="vat18" <?php echo((get_option('tax') == 'vat18') ? ' selected' : ''); ?>>НДС
+                            <option value="vat18" <?php echo((get_option('robokassa_payment_tax') == 'vat18') ? ' selected' : ''); ?>>НДС
                                 чека по ставке 18%
                             </option>
-                            <option value="vat110" <?php echo((get_option('tax') == 'vat110') ? ' selected' : ''); ?>>
+                            <option value="vat110" <?php echo((get_option('robokassa_payment_tax') == 'vat110') ? ' selected' : ''); ?>>
                                 НДС чека по расчетной ставке 10/110
                             </option>
-                            <option value="vat118" <?php echo((get_option('vat118') == 'esn') ? ' selected' : ''); ?>>
+                            <option value="vat118" <?php echo((get_option('robokassa_payment_tax') == 'vat118') ? ' selected' : ''); ?>>
                                 НДС чека по расчетной ставке 18/118
                             </option>
                         </select>
@@ -298,14 +306,14 @@
                 <tr valign="top" id="commission">
                     <th scope="row">Кто оплачивает комиссию?</th>
                     <td>
-                        <input type="radio" id="who_shop" name="who_commission"
-                               value="shop" <?php echo get_option('who_commission') == 'shop' ? 'checked="checked"'
+                        <input type="radio" id="who_shop" name="robokassa_payment_who_commission"
+                               value="shop" <?php echo get_option('robokassa_payment_who_commission') == 'shop' ? 'checked="checked"'
                             : ''; ?> onchange="spoleer();"><label for="who_shop">Магазин</label>
-                        <input type="radio" id="who_client" name="who_commission"
-                               value="client" <?php echo get_option('who_commission') == 'client' ? 'checked="checked"'
+                        <input type="radio" id="who_client" name="robokassa_payment_who_commission"
+                               value="client" <?php echo get_option('robokassa_payment_who_commission') == 'client' ? 'checked="checked"'
                             : ''; ?> onchange="spoleer();"><label for="who_client">Покупатель</label>
-                        <input type="radio" id="who_both" name="who_commission"
-                               value="both" <?php echo get_option('who_commission') == 'both' ? 'checked="checked"'
+                        <input type="radio" id="who_both" name="robokassa_payment_who_commission"
+                               value="both" <?php echo get_option('robokassa_payment_who_commission') == 'both' ? 'checked="checked"'
                             : ''; ?> onchange="spoleer();"><label for="who_both">Оба</label>
                     </td>
                 </tr>
@@ -313,19 +321,19 @@
                 <tr valign="top" id="size_commission">
                     <th scope="row">Доля комиссии, оплачиваемой покупателем(%)</th>
                     <td>
-                        <input type="text" name="size_commission" id="size_commission1"
-                               value="<?php echo get_option('size_commission'); ?>"/>
+                        <input type="text" name="robokassa_payment_size_commission" id="size_commission1"
+                               value="<?php echo get_option('robokassa_payment_size_commission'); ?>"/>
                     </td>
                 </tr>
 
                 <tr valign="top">
                     <th scope="row">Выбор способа оплаты</th>
                     <td>
-                        <input type="radio" id="robopaytype" name="paytype"
-                               value="false" <?php echo get_option('paytype') == 'false' ? 'checked="checked"' : ''; ?>><label
+                        <input type="radio" id="robopaytype" name="robokassa_payment_paytype"
+                               value="false" <?php echo get_option('robokassa_payment_paytype') == 'false' ? 'checked="checked"' : ''; ?>><label
                                 for="robopaytype">В Робокассе</label>
-                        <input type="radio" id="shoppaytype" name="paytype"
-                               value="true" <?php echo get_option('paytype') == 'true' ? 'checked="checked"'
+                        <input type="radio" id="shoppaytype" name="robokassa_payment_paytype"
+                               value="true" <?php echo get_option('robokassa_payment_paytype') == 'true' ? 'checked="checked"'
                             : ''; ?>><label for="shoppaytype">В магазине</label>
                     </td>
                 </tr>
@@ -333,47 +341,46 @@
                 <tr valign="top">
                     <th scope="row">Страница успеха платежа</th>
                     <td>
-                        <select id="SuccessURL" name="SuccessURL">
-                            <option value="wc_success" <?php echo((get_option('SuccessURL') == 'wc_success')
+                        <select id="SuccessURL" name="robokassa_payment_SuccessURL">
+                            <option value="wc_success" <?php echo((get_option('robokassa_payment_SuccessURL') == 'wc_success')
                                 ? ' selected' : ''); ?>>Страница "Заказ принят" от WooCommerce
                             </option>
-                            <option value="wc_checkout" <?php echo((get_option('SuccessURL') == 'wc_checkout')
+                            <option value="wc_checkout" <?php echo((get_option('robokassa_payment_SuccessURL') == 'wc_checkout')
                                 ? ' selected' : ''); ?>>Страница оформления заказа от WooCommerce
                             </option>
                             <?php
                             if (get_pages()) {
                                 foreach (get_pages() as $page) {
-                                    $selected = ($page->ID == get_option('SuccessURL')) ? ' selected' : '';
+                                    $selected = ($page->ID == get_option('robokassa_payment_SuccessURL')) ? ' selected' : '';
                                     echo '<option value="'.$page->ID.'"'.$selected.'>'.$page->post_title.'</option>';
                                 }
                             }
                             ?>
-                        </select>
-                        <br>
-                        <span style="line-height: 1;font-weight: normal;font-style: italic;font-size: 12px;">Эту страницу увидит покупатель, когда оплатит заказ<span>
+                        </select><br />
+                        <span class="text-description">Эту страницу увидит покупатель, когда оплатит заказ<span>
                     </td>
                 </tr>
 
                 <tr valign="top">
                     <th scope="row">Страница отказа</th>
                     <td>
-                        <select id="FailURL" name="FailURL">
-                            <option value="wc_checkout" <?php echo((get_option('FailURL') == 'wc_checkout')
+                        <select id="FailURL" name="robokassa_payment_FailURL">
+                            <option value="wc_checkout" <?php echo((get_option('robokassa_payment_FailURL') == 'wc_checkout')
                                 ? ' selected' : ''); ?>>Страница оформления заказа от WooCommerce
                             </option>
-                            <option value="wc_payment" <?php echo((get_option('FailURL') == 'wc_payment') ? ' selected'
+                            <option value="wc_payment" <?php echo((get_option('robokassa_payment_FailURL') == 'wc_payment') ? ' selected'
                                 : ''); ?>>Страница оплаты заказа от WooCommerce
                             </option>
                             <?php
                             if ($pages = get_pages()) {
                                 foreach ($pages as $page) {
-                                    $selected = ($page->ID == get_option('FailURL')) ? ' selected' : '';
+                                    $selected = ($page->ID == get_option('robokassa_payment_FailURL')) ? ' selected' : '';
                                     echo '<option value="'.$page->ID.'"'.$selected.'>'.$page->post_title.'</option>';
                                 }
                             }
                             ?>
-                        </select>
-                        <br><span style="line-height: 1;font-weight: normal;font-style: italic;font-size: 12px;">Эту страницу увидит покупатель, если что-то пойдет не так: например, если ему не хватит денег на карте<span>
+                        </select><br />
+	                    <span class="text-description">Эту страницу увидит покупатель, если что-то пойдет не так: например, если ему не хватит денег на карте<span>
                     </td>
                 </tr>
             </table>
@@ -388,12 +395,3 @@
 
     </form>
 </div>
-
-<script type="text/javascript">
-    $(document).ready(function () {
-        $('.spoiler_links').click(function () {
-            $(this).next('.spoiler_body').toggle('normal');
-            return false;
-        });
-    });
-</script>

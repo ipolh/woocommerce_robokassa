@@ -1,5 +1,7 @@
 <?php
 
+namespace Robokassa\Payment;
+
 class RobokassaPayAPI {
 
     /**
@@ -126,14 +128,14 @@ class RobokassaPayAPI {
      *
      * @return string
      *
-     * @throws Exception
+     * @throws \Exception
      */
     public function getSignature($string, $method = 'md5') {
         if (in_array($method, array('md5', 'ripemd160', 'sha1', 'sha256', 'sha384', 'sha512'))) {
             return strtoupper(hash($method, $string));
         }
 
-        throw new Exception('Wrong Signature Method');
+        throw new \Exception('Wrong Signature Method');
     }
 
     /**
@@ -148,7 +150,7 @@ class RobokassaPayAPI {
      *
      * @return string
      *
-     * @throws Exception
+     * @throws \Exception
      */
     public function createForm(
         $sum,
@@ -184,7 +186,7 @@ class RobokassaPayAPI {
             $formData['IncCurrLabel'] = $incCurrLabel;
         }
 
-        $robokassaEnabled = get_option('wc_robokassa_enabled');
+        $robokassaEnabled = get_option('robokassa_payment_wc_robokassa_enabled');
 
         switch ($robokassaEnabled) {
             case 'torobomarket':
@@ -194,7 +196,7 @@ class RobokassaPayAPI {
                 $formUrl = 'https://auth.robokassa.ru/Merchant/Index.aspx';
                 break;
             default:
-                throw new Exception('Не ожиданное значение опции "wc_robokassa_enabled"');
+                throw new \Exception('Не ожиданное значение опции "wc_robokassa_enabled"');
         }
 
         return $this->renderForm($formUrl, $formData);
@@ -220,14 +222,15 @@ class RobokassaPayAPI {
         return $form;
     }
 
-    /**
-     * Отправляет СМС с помощью GET-запроса на робокассу
-     *
-     * @param string $phone
-     * @param string $message
-     *
-     * @return bool
-     */
+	/**
+	 * Отправляет СМС с помощью GET-запроса на робокассу
+	 *
+	 * @param string $phone
+	 * @param string $message
+	 *
+	 * @return bool
+	 * @throws \Exception
+	 */
     public function sendSms($phone, $message) {
         $data = array(
             'login' => $this->mrh_login,

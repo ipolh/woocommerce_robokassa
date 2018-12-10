@@ -9,50 +9,59 @@
   Version: 1.2.30
 */
 
-define('DEBUG_STATUS', false);
+use Robokassa\Payment\RoboDataBase;
+use Robokassa\Payment\RobokassaPayAPI;
+use Robokassa\Payment\RobokassaSms;
 
-if (DEBUG_STATUS) {
-    error_reporting(E_ALL);
-    ini_set('display_errors', 'on');
-} else {
-    error_reporting(0);
-    ini_set('display_errors', 'off');
-}
 
-spl_autoload_register(function ($className) {
-    $classFile = __DIR__ . "/classes/$className.php";
+\wp_enqueue_style(
+	'robokassa_payment_admin_style_menu',
+	\plugin_dir_url(__FILE__) . 'assets/css/menu.css'
+);
 
-    if (file_exists($classFile)) {
-        require_once $classFile;
-    }
-});
+\wp_enqueue_style(
+	'robokassa_payment_admin_style_main',
+	\plugin_dir_url(__FILE__) . 'assets/css/main.css'
+);
 
-add_action('admin_menu', 'initMenu'); // Хук для добавления страниц плагина в админку
-add_action('plugins_loaded', 'initWC'); // Хук инициализации плагина робокассы
-add_action('parse_request', 'wp_robokassa_checkPayment'); // Хук парсера запросов
-add_action('parse_request', 'robomarketRequest'); // Хук парсера запросов RoboMarket
-add_action('woocommerce_order_status_completed', 'smsWhenCompleted'); // Хук статуса заказа = "Выполнен"
-add_filter('cron_schedules', 'labelsCron'); // Добавляем CRON-период в 30 минут
-add_action('robokassaCRON1', 'getCurrLabels'); // Хук для CRONа. Обновление доступных способов оплаты.
+define('ROBOKASSA_PAYMENT_DEBUG_STATUS', false);
+
+\spl_autoload_register(
+	function ($className)
+	{
+		$file = __DIR__ . '/classes/' . \str_replace('\\', '/', $className) . '.php';
+
+		if (file_exists($file))
+	        require_once $file;
+	}
+);
+
+add_action('admin_menu', 'robokassa_payment_initMenu'); // Хук для добавления страниц плагина в админку
+add_action('plugins_loaded', 'robokassa_payment_initWC'); // Хук инициализации плагина робокассы
+add_action('parse_request', 'robokassa_payment_wp_robokassa_checkPayment'); // Хук парсера запросов
+add_action('parse_request', 'robokassa_payment_robomarketRequest'); // Хук парсера запросов RoboMarket
+add_action('woocommerce_order_status_completed', 'robokassa_payment_smsWhenCompleted'); // Хук статуса заказа = "Выполнен"
+add_filter('cron_schedules', 'robokassa_payment_labelsCron'); // Добавляем CRON-период в 30 минут
+add_action('robokassaCRON1', 'robokassa_payment_getCurrLabels'); // Хук для CRONа. Обновление доступных способов оплаты.
 
 if (!wp_next_scheduled('robokassaCRON1')) {
     wp_schedule_event(time(), 'halfHour', 'robokassaCRON1');
 }
 
-register_activation_hook(__FILE__, 'wp_robokassa_activate'); //Хук при активации плагина. Дефолтовые настройки и таблица в БД для СМС.
+register_activation_hook(__FILE__, 'robokassa_payment_wp_robokassa_activate'); //Хук при активации плагина. Дефолтовые настройки и таблица в БД для СМС.
 
 /**
  * @param string $str
  */
-function DEBUG($str) {
-    $file = __DIR__ . '/data/robokassa_DEBUG.txt';
+function robokassa_payment_DEBUG($str) {
 
-    if (DEBUG_STATUS) {
-        $time = time();
-        $DEBUGFile = fopen($file, 'a+');
-        fwrite($DEBUGFile, date('d.m.Y H:i:s', $time + 10800)." ($time) : $str\r\n");
-        fclose($DEBUGFile);
-    }
+	/** @var string $file */
+	$file = __DIR__ . '/data/robokassa_DEBUG.txt';
+
+    $time = \time();
+    $DEBUGFile = \fopen($file, 'a+');
+    fwrite($DEBUGFile, \date('d.m.Y H:i:s', $time + 10800)." ($time) : $str\r\n");
+    fclose($DEBUGFile);
 }
 
 /**
@@ -61,23 +70,23 @@ function DEBUG($str) {
  *
  * @return void
  */
-function smsWhenCompleted($order_id, $debug = '') {
+function robokassa_payment_smsWhenCompleted($order_id, $debug = '') {
     //Отправка СМС-2 если необходимо
-    $mrhLogin = get_option('MerchantLogin');
-    DEBUG("mrh_login = $mrhLogin \r\n");
+    $mrhLogin = get_option('robokassa_payment_MerchantLogin');
+    robokassa_payment_DEBUG("mrh_login = $mrhLogin \r\n");
 
-    if (get_option('test_onoff') == 'true') {
-        $pass1 = get_option('testshoppass1');
-        $pass2 = get_option('testshoppass2');
+    if (get_option('robokassa_payment_test_onoff') == 'true') {
+        $pass1 = get_option('robokassa_payment_testshoppass1');
+        $pass2 = get_option('robokassa_payment_testshoppass2');
     } else {
-        $pass1 = get_option('shoppass1');
-        $pass2 = get_option('shoppass2');
+        $pass1 = get_option('robokassa_payment_shoppass1');
+        $pass2 = get_option('robokassa_payment_shoppass2');
     }
 
     $debug .= "pass1 = $pass1 \r\n";
     $debug .= "pass2 = $pass2 \r\n";
 
-    if (get_option('sms2_enabled') == 'on') {
+    if (get_option('robokassa_payment_sms2_enabled') == 'on') {
         $debug .= "Условие СМС-2 верно! \r\n";
 
         $order = wc_get_order($order_id);
@@ -85,29 +94,18 @@ function smsWhenCompleted($order_id, $debug = '') {
         $phone = $order->billing_phone;
         $debug .= "phone = $phone \r\n";
 
-        $message = get_option('sms2_text');
+        $message = get_option('robokassa_payment_sms2_text');
         $debug .= "message = $message \r\n";
 
-        $translit = (get_option('sms_translit') == 'on');
+        $translit = (get_option('robokassa_payment_sms_translit') == 'on');
         $debug .= "translit = $translit \r\n";
         $debug .= "order_id = $order_id \r\n";
 
         $roboDataBase = new RoboDataBase(mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME));
-        $robokassa = new RobokassaPayAPI($mrhLogin, get_option('shoppass1'), get_option('shoppass2'));
+        $robokassa = new RobokassaPayAPI($mrhLogin, get_option('robokassa_payment_shoppass1'), get_option('robokassa_payment_shoppass2'));
 
         $sms = new RobokassaSms($roboDataBase, $robokassa, $phone, $message, $translit, $order_id, 2);
         $sms->send();
-    }
-
-    if (DEBUG_STATUS) {
-        $filePath = __DIR__ . '/data/robokassa_DEBUG.txt';
-
-        $date = date('H:i:s', strtotime('+3 hours'));
-        $file = fopen($_SERVER['DOCUMENT_ROOT'].$filePath, 'a+');
-
-        fwrite($file, "NEW SMS-2 RECORD ($date) \r\n");
-        fwrite($file, "$debug \r\n");
-        fclose($file);
     }
 }
 
@@ -116,39 +114,26 @@ function smsWhenCompleted($order_id, $debug = '') {
  *
  * @return void
  */
-function wp_robokassa_activate($debug) {
-    $file = __DIR__ . '/data/robokassa_DEBUG.txt';
-
+function robokassa_payment_wp_robokassa_activate($debug)
+{
     $time = time();
 
-    $debug .= date('H:i:s', strtotime('+3 hours', $time))." (Timestamp: $time) Starting plugin activation... \r\n";
-
-    $dbPrefix = getDbPrefix();
+    $dbPrefix = \robokassa_payment_getDbPrefix();
 
     $roboDataBase = new RoboDataBase(mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME));
 
     $roboDataBase->query("CREATE TABLE IF NOT EXISTS `{$dbPrefix}sms_stats` (`sms_id` int(10) unsigned NOT NULL AUTO_INCREMENT, `order_id` int(11) NOT NULL, `type` int(1) NOT NULL, `status` int(11) NOT NULL DEFAULT '0', `number` varchar(11) NOT NULL, `text` text NOT NULL, `send_time` datetime DEFAULT NULL, `response` text, `reply` text, PRIMARY KEY (`sms_id`), KEY `order_id` (`order_id`), KEY `status` (`status`)) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1;");
     $roboDataBase->query("CREATE TABLE IF NOT EXISTS `{$dbPrefix}robomarket_orders` (`post_id` int(11) NOT NULL COMMENT 'Id поста, он же id заказа', `other_id` int(11) NOT NULL COMMENT 'Id на стороне робомаркета', PRIMARY KEY (`post_id`,`other_id`), UNIQUE KEY `other_id` (`other_id`), UNIQUE KEY `post_id` (`post_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
 
-    $debug .= "Database connected successful! \r\n";
-
-    add_option('wc_robokassa_enabled', 'no');
-    add_option('test_onoff', 'false');
-    add_option('type_commission', 'true');
-    add_option('tax', 'none');
-    add_option('sno', 'fckoff');
-    add_option('who_commission', 'shop');
-    add_option('paytype', 'false');
-    add_option('SuccessURL', 'wc_success');
-    add_option('FailURL', 'wc_checkout');
-
-    $debug .= "Default options seted successful! \r\n";
-
-    if (DEBUG_STATUS) {
-        $file = fopen($_SERVER['DOCUMENT_ROOT'].$file, 'a++');
-        fwrite($file, "$debug \r\n");
-        fclose($file);
-    }
+    add_option('robokassa_payment_wc_robokassa_enabled', 'no');
+    add_option('robokassa_payment_test_onoff', 'false');
+    add_option('robokassa_payment_type_commission', 'true');
+    add_option('robokassa_payment_tax', 'none');
+    add_option('robokassa_payment_sno', 'fckoff');
+    add_option('robokassa_payment_who_commission', 'shop');
+    add_option('robokassa_payment_paytype', 'false');
+    add_option('robokassa_payment_SuccessURL', 'wc_success');
+    add_option('robokassa_payment_FailURL', 'wc_checkout');
 }
 
 /**
@@ -156,7 +141,7 @@ function wp_robokassa_activate($debug) {
  *
  * @return mixed
  */
-function labelsCron($schedules) {
+function robokassa_payment_labelsCron($schedules) {
     $schedules['halfHour'] = array(
         'interval' => 30 * MINUTE_IN_SECONDS, // каждые 30 минут
         'display' => __('Half hour'),
@@ -170,10 +155,10 @@ function labelsCron($schedules) {
  *
  * @return void
  */
-function cronLog($returned = 'success') {
+function robokassa_payment_cronLog($returned = 'success') {
     $file = __DIR__ . '/data/CRONLog/log.txt';
 
-    if (DEBUG_STATUS) {
+    if (ROBOKASSA_PAYMENT_DEBUG_STATUS) {
         $cronTestFile = fopen($_SERVER['DOCUMENT_ROOT'].$file, 'a+');
 
         fwrite($cronTestFile, date('d.m.Y H:i:s')." Worked succesfull! \r\n");
@@ -185,19 +170,19 @@ function cronLog($returned = 'success') {
 /**
  * @return void
  */
-function getCurrLabels() {
-    cronLog('Labels Loaded!');
+function robokassa_payment_getCurrLabels()
+{
 }
 
 /**
  * @return void
  */
-function initMenu() {
-    add_submenu_page('woocommerce', 'Настройки Робокассы', 'Настройки Робокассы', 8, 'main_settings_rb.php', 'main_settings');
-    add_submenu_page('main_settings_rb.php', 'Основные настройки', 'Основные настройки', 8, 'main_rb', 'main_settings');
-    add_submenu_page('main_settings_rb.php', 'Настройки СМС', 'Настройки СМС', 8, 'sms_rb', 'sms_settings');
-    add_submenu_page('main_settings_rb.php', 'РобоМаркет', 'РобоМаркет', 8, 'robomarket_rb', 'robomarket_settings');
-    add_submenu_page('main_settings_rb.php', 'Генерировать YML', 'Генерировать YML', 8, 'YMLGenerator', 'yml_generator');
+function robokassa_payment_initMenu() {
+    add_submenu_page('woocommerce', 'Настройки Робокассы', 'Настройки Робокассы', 8, 'robokassa_payment_main_settings_rb', 'robokassa_payment_main_settings');
+    add_submenu_page('main_settings_rb.php', 'Основные настройки', 'Основные настройки', 8, 'robokassa_payment_main_rb', 'robokassa_payment_main_settings');
+    add_submenu_page('main_settings_rb.php', 'Настройки СМС', 'Настройки СМС', 8, 'robokassa_payment_sms_rb', 'robokassa_payment_sms_settings');
+    add_submenu_page('main_settings_rb.php', 'РобоМаркет', 'РобоМаркет', 8, 'robokassa_payment_robomarket_rb', 'robokassa_payment_robomarket_settings');
+    add_submenu_page('main_settings_rb.php', 'Генерировать YML', 'Генерировать YML', 8, 'robokassa_payment_YMLGenerator', 'robokassa_payment_yml_generator');
 }
 
 /**
@@ -206,7 +191,7 @@ function initMenu() {
  *
  * @return string
  */
-function get_success_fail_url($name, $order_id) {
+function robokassa_payment_get_success_fail_url($name, $order_id) {
     $order = new WC_Order($order_id);
 
     switch ($name) {
@@ -224,16 +209,16 @@ function get_success_fail_url($name, $order_id) {
 /**
  * @return void
  */
-function wp_robokassa_checkPayment() {
+function robokassa_payment_wp_robokassa_checkPayment() {
     if (isset($_REQUEST['robokassa'])) {
-        $mrhLogin = get_option('MerchantLogin');
+        $mrhLogin = get_option('robokassa_payment_MerchantLogin');
 
-        if (get_option('test_onoff') == 'true') {
-            $pass1 = get_option('testshoppass1');
-            $pass2 = get_option('testshoppass2');
+        if (get_option('robokassa_payment_test_onoff') == 'true') {
+            $pass1 = get_option('robokassa_payment_testshoppass1');
+            $pass2 = get_option('robokassa_payment_testshoppass2');
         } else {
-            $pass1 = get_option('shoppass1');
-            $pass2 = get_option('shoppass2');
+            $pass1 = get_option('robokassa_payment_shoppass1');
+            $pass2 = get_option('robokassa_payment_shoppass2');
         }
 
         $returner = '';
@@ -260,14 +245,14 @@ function wp_robokassa_checkPayment() {
                     $returner = 'OK'.$_REQUEST['InvId'];
 
                     // Отправка СМС-1 если необходимо
-                    if (get_option('sms1_enabled') == 'on') {
+                    if (get_option('robokassa_payment_sms1_enabled') == 'on') {
                         $phone = $order->billing_phone;
-                        $message = get_option('sms1_text');
-                        $translit = (get_option('sms_translit') == 'on');
+                        $message = get_option('robokassa_payment_sms1_text');
+                        $translit = (get_option('robokassa_payment_sms_translit') == 'on');
                         $order_id = $_REQUEST['InvId'];
 
                         $dataBase = new RoboDataBase(mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME));
-                        $robokassa = new RobokassaPayAPI($mrhLogin, get_option('shoppass1'), get_option('shoppass2'));
+                        $robokassa = new RobokassaPayAPI($mrhLogin, get_option('robokassa_payment_shoppass1'), get_option('robokassa_payment_shoppass2'));
 
                         $sms = new RobokassaSms($dataBase, $robokassa, $phone, $message, $translit, $order_id, 1);
                         $sms->send();
@@ -289,12 +274,12 @@ function wp_robokassa_checkPayment() {
         }
 
         if ($_REQUEST['robokassa'] == 'success') {
-            header('Location:'.get_success_fail_url(get_option('SuccessURL'), $_REQUEST['InvId']));
+            header('Location:'.robokassa_payment_get_success_fail_url(get_option('robokassa_payment_SuccessURL'), $_REQUEST['InvId']));
             die;
         }
 
         if ($_REQUEST['robokassa'] == 'fail') {
-            header('Location:'.get_success_fail_url(get_option('FailURL'), $_REQUEST['InvId']));
+            header('Location:'.robokassa_payment_get_success_fail_url(get_option('robokassa_payment_FailURL'), $_REQUEST['InvId']));
             die;
         }
 
@@ -311,7 +296,8 @@ function wp_robokassa_checkPayment() {
  *
  * @return string
  */
-function getRobomarketHeaderHash($document, $secret) {
+function robokassa_payment_getRobomarketHeaderHash($document, $secret)
+{
     return strtoupper(md5($document.$secret));
 }
 
@@ -320,21 +306,21 @@ function getRobomarketHeaderHash($document, $secret) {
  *
  * @return void
  */
-function robomarketRequest() {
+function robokassa_payment_robomarketRequest() {
     if (isset($_REQUEST['robomarket'])) {
         $requestBody = file_get_contents('php://input');
 
-        $robomarketSecret = get_option('robomarket_secret');
-        $headerRequest = getRobomarketHeaderHash($requestBody, $robomarketSecret);
+        $robomarketSecret = get_option('robokassa_payment_robomarket_secret');
+        $headerRequest = robokassa_payment_getRobomarketHeaderHash($requestBody, $robomarketSecret);
 
         $headers = getallheaders();
 
         $roboSignature = isset($headers['Robosignature']) ? $headers['Robosignature'] : null;
 
         if ($roboSignature !== $headerRequest) {
-            DEBUG($requestBody);
-            DEBUG($robomarketSecret);
-            DEBUG("Header hash wrong!!! Calc Hash: $headerRequest Got Hash: $roboSignature");
+            robokassa_payment_DEBUG($requestBody);
+            robokassa_payment_DEBUG($robomarketSecret);
+            robokassa_payment_DEBUG("Header hash wrong!!! Calc Hash: $headerRequest Got Hash: $roboSignature");
 
             die('Header hash wrong!!!');
         }
@@ -430,7 +416,7 @@ function robomarketRequest() {
                             $order->add_order_note('[RoboMarket]Заказ зарезервирован');
                             $order->save();
 
-                            saveRobomarketOrder($order, $orderId);
+                            robokassa_payment_saveRobomarketOrder($order, $orderId);
 
                             $mainResponse = json_encode(array(
                                 'Robomarket' => array(
@@ -455,7 +441,7 @@ function robomarketRequest() {
 
             $orderId = $purchaseRequest['OrderId'];
 
-            $order = loadRobomarketOrder($orderId);
+            $order = robokassa_payment_loadRobomarketOrder($orderId);
 
             if (!empty($order)) {
                 if ('completed' !== $order->get_status()) {
@@ -559,23 +545,23 @@ function robomarketRequest() {
             }
         }
 
-        $headerResponse = getRobomarketHeaderHash($mainResponse, $robomarketSecret);
+        $headerResponse = robokassa_payment_getRobomarketHeaderHash($mainResponse, $robomarketSecret);
 
         header('RoboSignature: '.$headerResponse);
 
-        DEBUG('RoboMarket request: '.$requestBody);
-        DEBUG('RoboMarket request hash: '.$headerRequest);
-        DEBUG('Main hash: '.$roboSignature);
-        DEBUG('RoboMarket response: '.$mainResponse);
-        DEBUG('Robomarket secret: '.$robomarketSecret);
-        DEBUG('RoboMarket response hash: '.$headerResponse);
-        DEBUG('Request Headers = {');
+        robokassa_payment_DEBUG('RoboMarket request: '.$requestBody);
+        robokassa_payment_DEBUG('RoboMarket request hash: '.$headerRequest);
+        robokassa_payment_DEBUG('Main hash: '.$roboSignature);
+        robokassa_payment_DEBUG('RoboMarket response: '.$mainResponse);
+        robokassa_payment_DEBUG('Robomarket secret: '.$robomarketSecret);
+        robokassa_payment_DEBUG('RoboMarket response hash: '.$headerResponse);
+        robokassa_payment_DEBUG('Request Headers = {');
 
         foreach (getallheaders() as $key => $value) {
-            DEBUG("\t$key => $value");
+            robokassa_payment_DEBUG("\t$key => $value");
         }
 
-        DEBUG('}');
+        robokassa_payment_DEBUG('}');
 
         echo $mainResponse;
 
@@ -594,24 +580,25 @@ function robomarketRequest() {
  *
  * @return void
  */
-function createFormWC($order_id, $label, $commission = 0) {
+function robokassa_payment_createFormWC($order_id, $label, $commission = 0)
+{
 
-    $mrhLogin = get_option('MerchantLogin');
+    $mrhLogin = get_option('robokassa_payment_MerchantLogin');
 
-    if (get_option('test_onoff') == 'true') {
-        $pass1 = get_option('testshoppass1');
-        $pass2 = get_option('testshoppass2');
+    if (get_option('robokassa_payment_test_onoff') == 'true') {
+        $pass1 = get_option('robokassa_payment_testshoppass1');
+        $pass2 = get_option('robokassa_payment_testshoppass2');
     } else {
-        $pass1 = get_option('shoppass1');
-        $pass2 = get_option('shoppass2');
+        $pass1 = get_option('robokassa_payment_shoppass1');
+        $pass2 = get_option('robokassa_payment_shoppass2');
     }
 
     $rb = new RobokassaPayAPI($mrhLogin, $pass1, $pass2);
 
     $order = wc_get_order($order_id);
 
-    $sno = get_option('sno');
-    $tax = get_option('tax');
+    $sno = get_option('robokassa_payment_sno');
+    $tax = get_option('robokassa_payment_tax');
 
     $receipt = array();
 
@@ -622,12 +609,16 @@ function createFormWC($order_id, $label, $commission = 0) {
     global $woocommerce;
     $cart = $woocommerce->cart->get_cart();
 
-    foreach ($cart as $item) {
+    foreach ($cart as $item)
+    {
+
         $product = wc_get_product($item['product_id']);
 
         $current['name'] = $product->get_title();
         $current['quantity'] = (float) $item['quantity'];
         $current['sum'] = $item['line_total'];
+        $current['payment_object'] = \get_option('robokassa_payment_paymentObject');
+        $current['payment_method'] = \get_option('robokassa_payment_paymentMethod');
 
         if (isset($receipt['sno']) && ($receipt['sno'] == 'osn')) {
             $current['tax'] = $tax;
@@ -640,9 +631,12 @@ function createFormWC($order_id, $label, $commission = 0) {
 
     if((double) $order->get_shipping_total() > 0)
     {
+
 	    $current['name'] = 'Доставка';
 	    $current['quantity'] = 1;
 	    $current['sum'] = (double) \sprintf("%01.2f", $order->get_shipping_total());
+	    $current['payment_object'] = \get_option('robokassa_payment_paymentObject');
+	    $current['payment_method'] = \get_option('robokassa_payment_paymentMethod');
 
 	    if (isset($receipt['sno']) && ($receipt['sno'] == 'osn')) {
 		    $current['tax'] = $tax;
@@ -655,46 +649,46 @@ function createFormWC($order_id, $label, $commission = 0) {
 
     $order_total = floatval($order->get_total());
 
-    if (get_option('paytype') == 'true') {
-        if (get_option('who_commission') == 'shop') {
-            DEBUG("who_commisson = shop");
+    if (get_option('robokassa_payment_paytype') == 'true') {
+        if (get_option('robokassa_payment_who_commission') == 'shop') {
+            robokassa_payment_DEBUG("who_commisson = shop");
 
             $commission = $commission / 100;
-            DEBUG("commission = $commission");
+            robokassa_payment_DEBUG("commission = $commission");
 
             $incSum = number_format($order_total * (1 + (0 * $commission)), 2, '.', '');
-            DEBUG("incSum = $incSum");
+            robokassa_payment_DEBUG("incSum = $incSum");
 
             $commission = $rb->getCommission($label, $incSum) / 100;
-            DEBUG("commission = $commission");
+            robokassa_payment_DEBUG("commission = $commission");
 
             $sum = $rb->getCommissionSum($label, $incSum);
-            DEBUG("sum = $sum");
-        } elseif (get_option('who_commission') == 'both') {
-            $aCommission = get_option('size_commission') / 100;
-            DEBUG("who_commisson = both");
-            DEBUG("aCommission = $aCommission");
+            robokassa_payment_DEBUG("sum = $sum");
+        } elseif (get_option('robokassa_payment_who_commission') == 'both') {
+            $aCommission = get_option('robokassa_payment_size_commission') / 100;
+            robokassa_payment_DEBUG("who_commisson = both");
+            robokassa_payment_DEBUG("aCommission = $aCommission");
 
             $commission = $commission / 100;
-            DEBUG("commission = $commission");
+            robokassa_payment_DEBUG("commission = $commission");
 
             $incSum = number_format($order_total * (1 + ($aCommission * $commission)), 2, '.', '');
-            DEBUG("incSum = $incSum");
+            robokassa_payment_DEBUG("incSum = $incSum");
 
             $commission = $rb->getCommission($label, $incSum) / 100;
-            DEBUG("commission = $commission");
+            robokassa_payment_DEBUG("commission = $commission");
 
             $sum = $rb->getCommissionSum($label, $incSum);
-            DEBUG("sum = $sum");
+            robokassa_payment_DEBUG("sum = $sum");
         } else {
-            DEBUG("who_commission = client");
+            robokassa_payment_DEBUG("who_commission = client");
             $sum = number_format($order_total, 2, '.', '');
-            DEBUG("sum = $sum");
+            robokassa_payment_DEBUG("sum = $sum");
         }
     } else {
-        DEBUG("paytype = false");
+        robokassa_payment_DEBUG("paytype = false");
         $sum = number_format($order_total, 2, '.', '');
-        DEBUG("sum = $sum");
+        robokassa_payment_DEBUG("sum = $sum");
     }
 
     $invDesc = implode(', ', array_map(function(WC_Order_Item_Product $item) {
@@ -705,9 +699,9 @@ function createFormWC($order_id, $label, $commission = 0) {
         $invDesc = "Заказ номер $order_id";
     }
 
-    $receiptForForm = (get_option('type_commission') == 'false') ? $receipt : array();
+    $receiptForForm = (get_option('robokassa_payment_type_commission') == 'false') ? $receipt : array();
 
-    echo $rb->createForm($sum, $order_id, $invDesc, get_option('test_onoff'), $label, $receiptForForm);
+    echo $rb->createForm($sum, $order_id, $invDesc, get_option('robokassa_payment_test_onoff'), $label, $receiptForForm);
 }
 
 /**
@@ -715,18 +709,17 @@ function createFormWC($order_id, $label, $commission = 0) {
  *
  * @return void
  */
-function initWC() {
+function robokassa_payment_initWC() {
     if (!defined('ABSPATH')) {
         exit;
     }
 
-    if (!class_exists('WC_Payment_Gateway')) {
+    if (!class_exists(Robokassa\Payment\WC_WP_robokassa::class))
         return;
-    }
 
     require 'labelsClasses.php';
 
-    add_filter('woocommerce_payment_gateways', 'add_WC_WP_robokassa_class');
+    add_filter('woocommerce_payment_gateways', 'robokassa_payment_add_WC_WP_robokassa_class');
 }
 
 /**
@@ -739,10 +732,11 @@ function initWC() {
  *
  * @throws Exception
  */
-function saveRobomarketOrder(WC_Order $order, $otherId) {
+function robokassa_payment_saveRobomarketOrder(WC_Order $order, $otherId)
+{
     $roboDataBase = new RoboDataBase(mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME));
 
-    $dbPrefix = getDbPrefix();
+    $dbPrefix = robokassa_payment_getDbPrefix();
     $postId = $order->get_id();
 
     if (0 == mysqli_num_rows($roboDataBase->query("SELECT * FROM `{$dbPrefix}robomarket_orders` WHERE `post_id` = '$postId' AND `other_id` = $otherId"))) {
@@ -759,10 +753,11 @@ function saveRobomarketOrder(WC_Order $order, $otherId) {
  *
  * @return WC_Order | null
  */
-function loadRobomarketOrder($otherId) {
+function robokassa_payment_loadRobomarketOrder($otherId)
+{
     $roboDataBase = new RoboDataBase(mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME));
 
-    $dbPrefix = getDbPrefix();
+    $dbPrefix = robokassa_payment_getDbPrefix();
 
     $result = $roboDataBase->query("SELECT * FROM `{$dbPrefix}robomarket_orders` WHERE `other_id` = $otherId");
 
@@ -782,7 +777,8 @@ function loadRobomarketOrder($otherId) {
 /**
  * @return void
  */
-function main_settings() {
+function robokassa_payment_main_settings()
+{
     $_GET['li'] = 'main';
     include 'menu_rb.php';
     include 'main_settings_rb.php';
@@ -791,7 +787,8 @@ function main_settings() {
 /**
  * @return void
  */
-function sms_settings() {
+function robokassa_payment_sms_settings()
+{
     $_GET['li'] = 'sms';
     include 'menu_rb.php';
     include 'sms_settings_rb.php';
@@ -800,7 +797,8 @@ function sms_settings() {
 /**
  * @return void
  */
-function robomarket_settings() {
+function robokassa_payment_robomarket_settings()
+{
     $_GET['li'] = 'robomarket';
     include 'menu_rb.php';
     include 'robomarket_settings.php';
@@ -809,11 +807,12 @@ function robomarket_settings() {
 /**
  * @return void
  */
-function yml_generator() {
+function robokassa_payment_yml_generator()
+{
     $_GET['li'] = 'robomarket';
     include 'menu_rb.php';
     include 'YMLGenerator.php';
-    generateYML();
+	robokassa_payment_generateYML();
 }
 
 /**
@@ -823,7 +822,7 @@ function yml_generator() {
  *
  * @throws Exception
  */
-function getDbPrefix() {
+function robokassa_payment_getDbPrefix() {
     global $wpdb;
 
     if ($wpdb instanceof wpdb) {

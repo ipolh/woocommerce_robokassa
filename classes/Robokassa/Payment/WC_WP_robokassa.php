@@ -1,9 +1,11 @@
 <?php
 
+namespace Robokassa\Payment;
+
 /**
  * Класс выбора типа оплаты на стороне Робокассы
  */
-class WC_WP_robokassa extends WC_Payment_Gateway {
+class WC_WP_robokassa extends \WC_Payment_Gateway {
 
     /**
      * @var string
@@ -54,7 +56,7 @@ class WC_WP_robokassa extends WC_Payment_Gateway {
     public function receipt_page($order) {
         echo '<p>Спасибо за ваш заказ, пожалуйста, нажмите ниже на кнопку, чтобы заплатить.</p>';
 
-        createFormWC($order, $this->id, $this->commission);
+        robokassa_payment_createFormWC($order, $this->id, $this->commission);
     }
 
     /**

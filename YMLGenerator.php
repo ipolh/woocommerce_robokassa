@@ -1,15 +1,15 @@
 <?php
 
-function generateYML() {
-    error_reporting(0);
-    ini_set('display_errors', 'off');
+function robokassa_payment_generateYML()
+{
 
     $saler_name = get_bloginfo('name');
     $company_name = trim(get_bloginfo('name'));
     $site_url = get_bloginfo('url');
     $cat_arr = array();
 
-    $robomarketYML = 'wp-content/plugins/' . basename(__DIR__) . '/data/robomarket_yml.php';
+	$robomarketYML = \plugin_dir_path(__FILE__) . 'data/robomarket_yml.php';
+	$robomarketYMLUrl = \plugin_dir_url(__FILE__) . 'data/robomarket_yml.php';
 
     //Получаем категории магазина для генерациии YML
     foreach (get_categories() as $value) {
@@ -141,13 +141,13 @@ header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
 header('Pragma: public');
 echo '<?xml version=\"1.0\" encoding=\"utf-8\"?>';
 ?>";
-    $YML = fopen(ABSPATH . $robomarketYML, 'w');
+    $YML = fopen($robomarketYML, 'w');
     fwrite($YML, $headers . $MEGAYML);
     fclose($YML);
-    echo "<script>document.location.href='" . site_url($robomarketYML) . "'</script>";
+    echo "<script>document.location.href='" . $robomarketYMLUrl . "'</script>";
 }
 ?>
 
 <div class="content_holder">
-    <h4>Сохраните автоматически сгенерированный каталог Вашего магазина на компьютер и следуйте инструкции на странице <a href="<?php echo admin_url('admin.php?page=robomarket_rb'); ?>">настроек экспорта в РобоМаркет</a></h4>
+    <h4>Сохраните автоматически сгенерированный каталог Вашего магазина на компьютер и следуйте инструкции на странице <a href="<?php echo admin_url('admin.php?page=robokassa_payment_robomarket_rb'); ?>">настроек экспорта в РобоМаркет</a></h4>
 </div>

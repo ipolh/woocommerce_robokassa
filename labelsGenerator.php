@@ -1,13 +1,16 @@
 <?php
 
-$robokassa = new RobokassaPayAPI(get_option('MerchantLogin'), get_option('shoppass1'), get_option('shoppass2'));
+$robokassa = new \Robokassa\Payment\RobokassaPayAPI(
+	\get_option('robokassa_payment_MerchantLogin'),
+	\get_option('robokassa_payment_shoppass1'),
+	\get_option('robokassa_payment_shoppass2')
+);
 
 $currLabels = $robokassa->getCurrLabels();
 
-if (empty($currLabels)) {
-    if (DEBUG_STATUS) {
-        echo 'Не удалось загрузить методы оплаты.';
-    }
+if (empty($currLabels))
+{
+	echo 'Не удалось загрузить методы оплаты.';
     die();
 }
 
@@ -18,7 +21,7 @@ chmod($labels, 0666);
 
 fwrite($labelsFile, "<?php \n\n");
 
-$method = "class payment_all extends WC_WP_robokassa {\n"
+$method = "class payment_robokassa_pay_method_request_all extends \Robokassa\Payment\WC_WP_robokassa {\n"
         . "    public function __construct() {\n"
         . "        \$this->id = 'all';\n"
         . "        \$this->method_title = 'Робокасса';\n"
@@ -37,7 +40,7 @@ foreach ($currLabels as $key => $value) {
     $alias = $value['Alias'];
     $name = $value['Name'];
 
-    $method = "class payment_$label extends WC_WP_robokassa {\n"
+    $method = "class payment_robokassa_pay_method_request_$label extends \Robokassa\Payment\WC_WP_robokassa {\n"
             . "    public function __construct() {\n"
             . "        \$this->id = '$alias';\n"
             . "        \$this->method_title = '$name (Робокасса)';\n"
@@ -49,7 +52,7 @@ foreach ($currLabels as $key => $value) {
             . "    }\n"
             . "}\n";
 
-    $array[] = "payment_$label";
+    $array[] = "payment_robokassa_pay_method_request_$label";
 
     fwrite($labelsFile, "$method\n");
 }
@@ -59,12 +62,12 @@ $functionStr = "/**
  *
  * @return array
  */
-function add_WC_WP_robokassa_class(\$methods) {
-    if (get_option('wc_robokassa_enabled') == 'no') {
+function robokassa_payment_add_WC_WP_robokassa_class(\$methods) {
+    if (get_option('robokassa_payment_wc_robokassa_enabled') == 'no') {
         return \$methods;
     }
-    if (get_option('paytype') == 'false') {
-        \$methods[] = 'payment_all'; // Класс выбора типа оплаты на стороне Робокассы
+    if (get_option('robokassa_payment_paytype') == 'false') {
+        \$methods[] = 'payment_robokassa_pay_method_request_all'; // Класс выбора типа оплаты на стороне Робокассы
     } else {\n";
 
 foreach ($array as $value) {
