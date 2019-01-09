@@ -97,8 +97,19 @@
     <?php
         $sql = "SELECT order_id FROM `wp_woocommerce_order_items` ORDER BY `wp_woocommerce_order_items`.`order_item_id` DESC LIMIT 1";
         $dataBase = new \Robokassa\Payment\RoboDataBase(mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME));
-        $next_order_number = mysqli_fetch_array($dataBase->query($sql));
-        $next_order_number = $next_order_number['order_id'];
+
+        $result = $dataBase->query($sql);
+
+        if($result instanceof \mysqli_result)
+        {
+
+	        $next_order_number = mysqli_fetch_array($dataBase->query($sql));
+	        $next_order_number = $next_order_number['order_id'];
+        }
+        else
+        {
+	        $next_order_number = 0;
+        }
 
         \wp_add_inline_script(
             'robokassa_payment_admin_sms_settings_next_order',

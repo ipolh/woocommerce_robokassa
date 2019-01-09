@@ -66,10 +66,15 @@ class WC_WP_robokassa extends \WC_Payment_Gateway {
      *
      * @return array
      */
-    public function process_payment($order_id) {
+    public function process_payment($order_id)
+    {
+
+    	/** @var bool|WC_Order|WC_Refund $order */
+    	$order = \wc_get_order($order_id);
+
         return array(
             'result' => 'success',
-            'redirect' => add_query_arg('order-pay', $order_id, add_query_arg('key', wc_get_order($order_id)->order_key, get_permalink(woocommerce_get_page_id('pay')))),
+            'redirect' => $order->get_checkout_payment_url(true)
         );
     }
 

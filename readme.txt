@@ -3,7 +3,7 @@ Contributors: ipol
 Donate link: http://ipolh.com/
 Tags: robokassa payment gateway, robokassa, robokassa woocommerce, ecommerce, payment gateway, woo-commerce, woocommerce ===
 Requires at least: 4.9
-Tested up to: 4.9
+Tested up to: 5.0.2
 Stable tag: 4.9
 Requires PHP: 5.6.32
 License: GPLv2 or later
