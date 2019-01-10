@@ -36,7 +36,7 @@ class WC_WP_robokassa extends \WC_Payment_Gateway {
         $this->init_form_fields();
         $this->init_settings();
 
-        $this->method_description = $this->long_name.'<br>Больше настроек в <a href="'.admin_url('/admin.php?page=main_rb').'">панели плагина</a>';
+        $this->method_description = $this->long_name.'<br>Больше настроек в <a href="'.admin_url('/admin.php?page=robokassa_payment_main_settings_rb').'">панели плагина</a>';
 
         add_action('woocommerce_api_wc_'.$this->id, array($this, 'check_ipn'));
         add_action('woocommerce_receipt_'.$this->id, array($this, 'receipt_page'));
