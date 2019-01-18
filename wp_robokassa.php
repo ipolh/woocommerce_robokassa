@@ -209,7 +209,9 @@ function robokassa_payment_get_success_fail_url($name, $order_id) {
 /**
  * @return void
  */
-function robokassa_payment_wp_robokassa_checkPayment() {
+function robokassa_payment_wp_robokassa_checkPayment()
+{
+
     if (isset($_REQUEST['robokassa'])) {
         $mrhLogin = get_option('robokassa_payment_MerchantLogin');
 
@@ -240,7 +242,8 @@ function robokassa_payment_wp_robokassa_checkPayment() {
                     $order->add_order_note('Заказ успешно оплачен!');
                     $order->payment_complete();
 
-                    WC()->cart->empty_cart();
+	                global $woocommerce;
+	                $woocommerce->cart->empty_cart();
 
                     $returner = 'OK'.$_REQUEST['InvId'];
 
