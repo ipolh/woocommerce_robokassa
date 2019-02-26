@@ -278,27 +278,13 @@
                     <th scope="row">Система налогообложения</th>
                     <td>
                         <select id="tax_select" name="robokassa_payment_tax" onchange="spoleer();">
-                            <option value="none" <?php echo((get_option('robokassa_payment_tax') == 'none') ? ' selected' : ''); ?>>Не
-                                передавать
-                            </option>
-                            <option value="none" <?php echo((get_option('robokassa_payment_tax') == 'none') ? ' selected' : ''); ?>>Без
-                                НДС
-                            </option>
-                            <option value="vat0" <?php echo((get_option('robokassa_payment_tax') == 'vat0') ? ' selected' : ''); ?>>НДС по
-                                ставке 0%
-                            </option>
-                            <option value="vat10" <?php echo((get_option('robokassa_payment_tax') == 'vat10') ? ' selected' : ''); ?>>НДС
-                                чека по ставке 10%
-                            </option>
-                            <option value="vat18" <?php echo((get_option('robokassa_payment_tax') == 'vat18') ? ' selected' : ''); ?>>НДС
-                                чека по ставке 18%
-                            </option>
-                            <option value="vat110" <?php echo((get_option('robokassa_payment_tax') == 'vat110') ? ' selected' : ''); ?>>
-                                НДС чека по расчетной ставке 10/110
-                            </option>
-                            <option value="vat118" <?php echo((get_option('robokassa_payment_tax') == 'vat118') ? ' selected' : ''); ?>>
-                                НДС чека по расчетной ставке 18/118
-                            </option>
+                            <option value="none" <?php echo((get_option('robokassa_payment_tax') == 'none') ? ' selected' : ''); ?>>Не передавать</option>
+                            <option value="none" <?php echo((get_option('robokassa_payment_tax') == 'none') ? ' selected' : ''); ?>>Без НДС</option>
+                            <option value="vat0" <?php echo((get_option('robokassa_payment_tax') == 'vat0') ? ' selected' : ''); ?>>НДС по ставке 0%</option>
+                            <option value="vat10" <?php echo((get_option('robokassa_payment_tax') == 'vat10') ? ' selected' : ''); ?>>НДС чека по ставке 10%</option>
+                            <option value="vat18" <?php echo((get_option('robokassa_payment_tax') == 'vat20') ? ' selected' : ''); ?>>НДС чека по ставке 20%</option>
+                            <option value="vat110" <?php echo((get_option('robokassa_payment_tax') == 'vat110') ? ' selected' : ''); ?>>НДС чека по расчетной ставке 10/110</option>
+                            <option value="vat118" <?php echo((get_option('robokassa_payment_tax') == 'vat120') ? ' selected' : ''); ?>>НДС чека по расчетной ставке 20/120</option>
                         </select>
                     </td>
                 </tr>
