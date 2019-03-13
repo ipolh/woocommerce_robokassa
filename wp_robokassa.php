@@ -225,56 +225,54 @@ function robokassa_payment_wp_robokassa_checkPayment()
 
         $returner = '';
 
-        if ($_REQUEST['robokassa'] === 'result') {
-            $OutSum_confirm = $_REQUEST['OutSum'];
-            $InvId_confirm = $_REQUEST['InvId'];
-            $sign = $_REQUEST['SignatureValue'];
+	    if ($_REQUEST['robokassa'] === 'result')
+	    {
 
-            $str = "$OutSum_confirm:$InvId_confirm:$pass2";
+		    $OutSum_confirm = $_REQUEST['OutSum'];
+		    $InvId_confirm = $_REQUEST['InvId'];
+		    $sign = $_REQUEST['SignatureValue'];
 
-            $crc_confirm = strtoupper(md5($str));
+		    $str = "$OutSum_confirm:$InvId_confirm:$pass2";
 
-            if ($crc_confirm == $sign) {
-                $robokassa = new RobokassaPayAPI($mrhLogin, $pass1, $pass2);
+		    $crc_confirm = \strtoupper(\md5($str));
 
-                if ($robokassa->reCheck($_REQUEST['InvId'])) {
-                    $order = new WC_Order($_REQUEST['InvId']);
-                    $order->add_order_note('Заказ успешно оплачен!');
-                    $order->payment_complete();
+		    if ($crc_confirm == $sign)
+		    {
 
-	                global $woocommerce;
-	                $woocommerce->cart->empty_cart();
+			    $order = new WC_Order($_REQUEST['InvId']);
+			    $order->add_order_note('Заказ успешно оплачен!');
+			    $order->payment_complete();
 
-                    $returner = 'OK'.$_REQUEST['InvId'];
+			    global $woocommerce;
+			    $woocommerce->cart->empty_cart();
 
-                    // Отправка СМС-1 если необходимо
-                    if (get_option('robokassa_payment_sms1_enabled') == 'on') {
-                        $phone = $order->billing_phone;
-                        $message = get_option('robokassa_payment_sms1_text');
-                        $translit = (get_option('robokassa_payment_sms_translit') == 'on');
-                        $order_id = $_REQUEST['InvId'];
+			    $returner = 'OK'.$_REQUEST['InvId'];
 
-                        $dataBase = new RoboDataBase(mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME));
-                        $robokassa = new RobokassaPayAPI($mrhLogin, get_option('robokassa_payment_shoppass1'), get_option('robokassa_payment_shoppass2'));
+			    if (get_option('robokassa_payment_sms1_enabled') == 'on')
+			    {
 
-                        $sms = new RobokassaSms($dataBase, $robokassa, $phone, $message, $translit, $order_id, 1);
-                        $sms->send();
-                    }
-                } else {
-                    $order = new WC_Order($_REQUEST['InvId']);
-                    $order->add_order_note('Заказ отменен!');
-                    $order->update_status('failed');
+				    $phone = $order->billing_phone;
+				    $message = get_option('robokassa_payment_sms1_text');
+				    $translit = (get_option('robokassa_payment_sms_translit') == 'on');
+				    $order_id = $_REQUEST['InvId'];
 
-                    $returner = 'NOT 2 OK'.$_REQUEST['InvId'];
-                }
-            } else {
-                $order = new WC_Order($_REQUEST['InvId']);
-                $order->add_order_note('Bad CRC');
-                $order->update_status('failed');
+				    $dataBase = new RoboDataBase(mysqli_connect(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME));
+				    $robokassa = new RobokassaPayAPI($mrhLogin, get_option('robokassa_payment_shoppass1'), get_option('robokassa_payment_shoppass2'));
 
-                $returner = 'NOT 1 OK'.$_REQUEST['InvId'];
-            }
-        }
+				    $sms = new RobokassaSms($dataBase, $robokassa, $phone, $message, $translit, $order_id, 1);
+				    $sms->send();
+			    }
+		    }
+		    else
+		    {
+
+			    $order = new WC_Order($_REQUEST['InvId']);
+			    $order->add_order_note('Bad CRC');
+			    $order->update_status('failed');
+
+			    $returner = 'NOT 1 OK'.$_REQUEST['InvId'];
+		    }
+	    }
 
         if ($_REQUEST['robokassa'] == 'success') {
             header('Location:'.robokassa_payment_get_success_fail_url(get_option('robokassa_payment_SuccessURL'), $_REQUEST['InvId']));
